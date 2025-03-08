@@ -68,8 +68,6 @@ async function getAuthTokens() {
 // Function to refresh the access token using the refresh token
 async function refreshAccessToken() {
   try {
-    console.log("Refreshing access token using refresh token...");
-
     // According to documentation, send the access token in the headers as Token
     const response = await axios.post(
       "https://api.ceipal.com/v1/refreshToken",
@@ -86,12 +84,6 @@ async function refreshAccessToken() {
       accessToken = response.data.access_token;
       accessTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
-      console.log("Successfully refreshed CEIPAL access token");
-      console.log(
-        "New access token valid until:",
-        new Date(accessTokenExpiry).toLocaleString()
-      );
-
       return accessToken;
     } else {
       throw new Error("Failed to refresh access token");
@@ -105,9 +97,6 @@ async function refreshAccessToken() {
 
     // If refresh fails and refresh token is still valid, try getting new tokens
     if (Date.now() < refreshTokenExpiry) {
-      console.log(
-        "Refresh failed but refresh token still valid. Getting new tokens..."
-      );
       return getAuthTokens();
     } else {
       throw new Error("Refresh token expired. Please authenticate again.");
@@ -144,8 +133,6 @@ async function ensureToken(req, res, next) {
 // Route to get jobs from CEIPAL
 app.get("/api/jobs", ensureToken, async (req, res) => {
   try {
-    console.log("Fetching jobs from CEIPAL API...");
-
     // Using the correct endpoint from the documentation
     const endpoint = "https://api.ceipal.com/v1/getJobPostingsList";
     const response = await axios.get(endpoint, {
@@ -155,11 +142,8 @@ app.get("/api/jobs", ensureToken, async (req, res) => {
       },
     });
 
-    console.log("Jobs API response received");
-
     // Transform the data to match your frontend structure
     let transformedJobs = [];
-    console.log("response:", response);
     if (Array.isArray(response.data)) {
       transformedJobs = response.data.map((job) => transformJobData(job));
     } else if (response.data && Array.isArray(response.data.results)) {
@@ -203,8 +187,6 @@ app.get("/api/jobs", ensureToken, async (req, res) => {
       );
     }
 
-    console.log(`Transformed ${transformedJobs.length} jobs for frontend`);
-
     res.json(transformedJobs);
   } catch (error) {
     console.error("Error fetching jobs from CEIPAL:", error.message);
@@ -237,12 +219,8 @@ app.get("/api/jobs/:id", ensureToken, async (req, res) => {
   try {
     const jobId = req.params.id;
 
-    console.log(`Fetching job details for ID: ${jobId}`);
-
     // Using the correct endpoint from the documentation with job_id as a query parameter
     const endpoint = `https://api.ceipal.com/v1/getJobPostingDetails/?job_id=${jobId}`;
-
-    console.log(`Using endpoint: ${endpoint}`);
 
     const response = await axios.get(endpoint, {
       headers: {
@@ -250,8 +228,6 @@ app.get("/api/jobs/:id", ensureToken, async (req, res) => {
         "Content-Type": "application/json",
       },
     });
-
-    console.log("Job details received");
 
     // Transform the job data
     const transformedJob = transformJobData(response.data);
@@ -288,10 +264,6 @@ app.get("/api/jobs/:id", ensureToken, async (req, res) => {
 
 // Helper function to transform job data
 function transformJobData(job) {
-  console.log(
-    "Transforming job data for:",
-    job.position_title || job.title || job.job_title || "Unknown job"
-  );
 
   // Simplified location handling to avoid long lists of locations
   let location = "Remote";
@@ -563,90 +535,71 @@ function extractResponsibilities(job) {
   return [];
 }
 
-app.post("/api/apply-job", upload.single("resume"), async (req, res) => {
-  try {
-    const { jobId, firstName, lastName, email, phone } = req.body;
-    const resumeFile = req.file;
+// app.post("/api/apply-job", upload.single("resume"), async (req, res) => {
+//   try {
+//     const { jobId, firstName, lastName, email, phone } = req.body;
+//     const resumeFile = req.file;
 
-    if (!jobId || !firstName || !lastName || !email || !phone || !resumeFile) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
-    }
+//     if (!jobId || !firstName || !lastName || !email || !phone || !resumeFile) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Missing required fields",
+//       });
+//     }
 
-    const formData = new FormData();
-    formData.append("job_id", jobId);
-    formData.append("first_name", firstName);
-    formData.append("last_name", lastName);
-    formData.append("email", email);
-    formData.append("phone", phone);
+//     const formData = new FormData();
+//     formData.append("job_id", jobId);
+//     formData.append("first_name", firstName);
+//     formData.append("last_name", lastName);
+//     formData.append("email", email);
+//     formData.append("phone", phone);
 
-    const fileStream = fs.createReadStream(resumeFile.path);
-    formData.append("resume", fileStream, {
-      filename: resumeFile.originalname,
-      contentType: resumeFile.mimetype,
-    });
+//     const fileStream = fs.createReadStream(resumeFile.path);
+//     formData.append("resume", fileStream, {
+//       filename: resumeFile.originalname,
+//       contentType: resumeFile.mimetype,
+//     });
 
-    const apiToken = process.env.CEIPAL_API_TOKEN;
-    if (!apiToken) {
-      return res.status(500).json({
-        success: false,
-        message: "API token not configured",
-      });
-    }
+//     const apiToken = process.env.CEIPAL_API_TOKEN;
+//     if (!apiToken) {
+//       return res.status(500).json({
+//         success: false,
+//         message: "API token not configured",
+//       });
+//     }
 
-    const response = await fetch(
-      "https://api.ceipal.com/v1/applyJobWithOutRegistration",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-        },
-        body: formData,
-      }
-    );
+//     const response = await fetch(
+//       "https://api.ceipal.com/v1/applyJobWithOutRegistration",
+//       {
+//         method: "POST",
+//         headers: {
+//           Authorization: `Bearer ${apiToken}`,
+//         },
+//         body: formData,
+//       }
+//     );
 
-    const responseData = await response.json();
+//     const responseData = await response.json();
 
-    fs.unlinkSync(resumeFile.path);
+//     fs.unlinkSync(resumeFile.path);
 
-    return res.json({
-      success: response.ok,
-      data: responseData,
-    });
-  } catch (error) {
-    console.error("Error applying for job:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to submit application",
-      error: error.message,
-    });
-  }
-});
+//     return res.json({
+//       success: response.ok,
+//       data: responseData,
+//     });
+//   } catch (error) {
+//     console.error("Error applying for job:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to submit application",
+//       error: error.message,
+//     });
+//   }
+// });
 
-// Example usage
-// const jobId = "z5G7h3l6a1kMvyS65NP3c11IZ12A3In55hsQTBHfxfE=";
-// const candidateInfo = {
-//   firstName: "John",
-//   lastName: "Doe",
-//   email: "john.doe@example.com",
-//   phone: "1234567890",
-// };
-
-// For file input in browser
-// const resumeFile = document.getElementById('resume-upload').files[0];
-
-// Call the function
-// applyForJob(jobId, candidateInfo, resumeFile)
-//   .then((response) => {
-//     // Handle successful application
-//   })
-//   .catch((error) => {
-//     // Handle errors
-//   });
 
 // Start the server
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Get all jobs at http://localhost:${PORT}/api/jobs`);
