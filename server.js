@@ -3,17 +3,11 @@ import cors from "cors";
 import dotenv from "dotenv";
 import axios from "axios";
 import multer from "multer"
-import fetch from "node-fetch"
-import fs from "fs"
-// import FormData from "form-data"
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Set up multer for file uploads
-const upload = multer({ dest: "uploads/" })
 
 // Middleware
 app.use(cors());
