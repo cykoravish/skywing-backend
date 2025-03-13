@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import axios from "axios";
-import multer from "multer"
+import multer from "multer";
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: "https://skywings-frontend.onrender.com", // Only allow frontend
+    origin: ["https://skywings-frontend.onrender.com", "http://localhost:5173"], // Only allow frontend
     methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
     credentials: true, // If using cookies/auth tokens
   })
@@ -52,14 +52,17 @@ async function getAuthTokens() {
       refreshTokenExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
       return accessToken;
     } else {
-      console.error("Unexpected response structure:", response.data);
+      console.error("Unexpected response structure:");
+      // console.error("Unexpected response structure:", response.data);
       throw new Error("Failed to get access_token from response");
     }
   } catch (error) {
     console.error("Error getting CEIPAL auth tokens:", error.message);
     if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
+      // console.error("Response status:error", error.response.status);
+      // console.error("Response data:error", error.response.data);
+      console.error("Response status:error");
+      console.error("Response data:error");
     }
     throw error;
   }
@@ -91,8 +94,10 @@ async function refreshAccessToken() {
   } catch (error) {
     console.error("Error refreshing access token:", error.message);
     if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
+      // console.error("Response status:", error.response.status);
+      // console.error("Response data:", error.response.data);
+      console.error("Response status:");
+      console.error("Response data:");
     }
 
     // If refresh fails and refresh token is still valid, try getting new tokens
@@ -186,13 +191,16 @@ app.get("/api/jobs", ensureToken, async (req, res) => {
         "Unexpected response structure. Could not find jobs array."
       );
     }
-
+    // console.log("transformedJobs in single job api:", transformedJobs);
+    console.log("transformedJobs in all job api:");
     res.json(transformedJobs);
   } catch (error) {
     console.error("Error fetching jobs from CEIPAL:", error.message);
     if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
+      // console.error("Response status:", error.response.status);
+      // console.error("Response data:", error.response.data);
+      console.error("Response status:");
+      console.error("Response data:");
     }
 
     // If there's an authentication error, try to get new tokens and retry
@@ -231,7 +239,7 @@ app.get("/api/jobs/:id", ensureToken, async (req, res) => {
 
     // Transform the job data
     const transformedJob = transformJobData(response.data);
-
+    console.log("transformedjobs in sigle job api response: ", transformedJob);
     res.json(transformedJob);
   } catch (error) {
     console.error(
@@ -264,7 +272,6 @@ app.get("/api/jobs/:id", ensureToken, async (req, res) => {
 
 // Helper function to transform job data
 function transformJobData(job) {
-
   // Simplified location handling to avoid long lists of locations
   let location = "Remote";
 
@@ -366,7 +373,25 @@ function transformJobData(job) {
     location: location,
     experience: experience,
     description: cleanDescription,
-    public_job_desc: originalHtml, // Keep the original field name for backward compatibility
+    public_job_desc: originalHtml,
+    job_created: job.created,
+    postal_code: job.postal_code,
+    duration: job.duration,
+    min_experience: job.min_experience,
+    job_start_date: job.job_start_date,
+    job_end_date: job.job_end_date,
+    modified: job.modified,
+    number_of_positions: job.number_of_positions,
+    job_status: job.job_status,
+    posted: job.posted,
+    skills: job.skills,
+    states: job.skills,
+    apply_job: job.apply_job,
+    requisition_description: job.requisition_description,
+    pay_rates: job.pay_rates,
+    employment_type: job.employment_type,
+    remote_opportunities: job.remote_opportunities,
+    closing_date: job.closing_date,
     details: {
       summary:
         job.summary ||
@@ -596,7 +621,6 @@ function extractResponsibilities(job) {
 //     });
 //   }
 // });
-
 
 // Start the server
 
