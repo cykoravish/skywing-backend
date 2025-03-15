@@ -146,54 +146,53 @@ app.get("/api/jobs", ensureToken, async (req, res) => {
         "Content-Type": "application/json",
       },
     });
-
     // Transform the data to match your frontend structure
-    let transformedJobs = [];
-    if (Array.isArray(response.data)) {
-      transformedJobs = response.data.map((job) => transformJobData(job));
-    } else if (response.data && Array.isArray(response.data.results)) {
-      transformedJobs = response.data.results.map((job) =>
-        transformJobData(job)
-      );
-    } else if (response.data && Array.isArray(response.data.jobs)) {
-      transformedJobs = response.data.jobs.map((job) => transformJobData(job));
-    } else if (response.data && Array.isArray(response.data.data)) {
-      transformedJobs = response.data.data.map((job) => transformJobData(job));
-    } else if (response.data && typeof response.data === "object") {
-      // If the response is an object but not in the expected format,
-      // try to extract job data from it
-      const possibleJobArrays = Object.values(response.data).filter(
-        (value) => Array.isArray(value) && value.length > 0
-      );
+    // let transformedJobs = [];
+    // if (Array.isArray(response.data)) {
+    //   transformedJobs = response.data.map((job) => transformJobData(job));
+    // } else if (response.data && Array.isArray(response.data.results)) {
+    //   transformedJobs = response.data.results.map((job) =>
+    //     transformJobData(job)
+    //   );
+    // } else if (response.data && Array.isArray(response.data.jobs)) {
+    //   transformedJobs = response.data.jobs.map((job) => transformJobData(job));
+    // } else if (response.data && Array.isArray(response.data.data)) {
+    //   transformedJobs = response.data.data.map((job) => transformJobData(job));
+    // } else if (response.data && typeof response.data === "object") {
+    //   // If the response is an object but not in the expected format,
+    //   // try to extract job data from it
+    //   const possibleJobArrays = Object.values(response.data).filter(
+    //     (value) => Array.isArray(value) && value.length > 0
+    //   );
 
-      if (possibleJobArrays.length > 0) {
-        // Use the largest array as it's most likely to be the jobs array
-        const jobsArray = possibleJobArrays.reduce((a, b) =>
-          a.length > b.length ? a : b
-        );
-        transformedJobs = jobsArray.map((job) => transformJobData(job));
-      } else {
-        // If we can't find an array, check if the response itself might be a single job
-        if (response.data.id || response.data.job_id || response.data.title) {
-          transformedJobs = [transformJobData(response.data)];
-        } else {
-          console.warn(
-            "Unexpected response structure. Could not find jobs array."
-          );
-          throw new Error(
-            "Unexpected response structure. Could not find jobs array."
-          );
-        }
-      }
-    } else {
-      console.warn("Unexpected response structure. Could not find jobs array.");
-      throw new Error(
-        "Unexpected response structure. Could not find jobs array."
-      );
-    }
-    // console.log("transformedJobs in single job api:", transformedJobs);
-    console.log("transformedJobs in all job api:");
-    res.json(transformedJobs);
+    //   if (possibleJobArrays.length > 0) {
+    //     // Use the largest array as it's most likely to be the jobs array
+    //     const jobsArray = possibleJobArrays.reduce((a, b) =>
+    //       a.length > b.length ? a : b
+    //     );
+    //     transformedJobs = jobsArray.map((job) => transformJobData(job));
+    //   } else {
+    //     // If we can't find an array, check if the response itself might be a single job
+    //     if (response.data.id || response.data.job_id || response.data.title) {
+    //       transformedJobs = [transformJobData(response.data)];
+    //     } else {
+    //       console.warn(
+    //         "Unexpected response structure. Could not find jobs array."
+    //       );
+    //       throw new Error(
+    //         "Unexpected response structure. Could not find jobs array."
+    //       );
+    //     }
+    //   }
+    // } else {
+    //   console.warn("Unexpected response structure. Could not find jobs array.");
+    //   throw new Error(
+    //     "Unexpected response structure. Could not find jobs array."
+    //   );
+    // }
+    // // console.log("transformedJobs in single job api:", transformedJobs);
+    // console.log("transformedJobs in all job api:");
+    res.json(response.data);
   } catch (error) {
     console.error("Error fetching jobs from CEIPAL:", error.message);
     if (error.response) {
@@ -236,12 +235,11 @@ app.get("/api/jobs/:id", ensureToken, async (req, res) => {
         "Content-Type": "application/json",
       },
     });
-
     // Transform the job data
     const transformedJob = transformJobData(response.data);
-    console.log("transformedjobs in sigle job api response: ", transformedJob);
     res.json(transformedJob);
   } catch (error) {
+    console.log("error:", error);
     console.error(
       `Error fetching job ${req.params.id} from CEIPAL:`,
       error.message
