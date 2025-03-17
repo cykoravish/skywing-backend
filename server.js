@@ -367,7 +367,7 @@ function transformJobData(job) {
       job.companyName ||
       job.company ||
       job.client_name ||
-      "CEIPAL",
+      "SKYWINGS",
     location: location,
     experience: experience,
     description: cleanDescription,
