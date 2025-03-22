@@ -139,59 +139,14 @@ async function ensureToken(req, res, next) {
 app.get("/api/jobs", ensureToken, async (req, res) => {
   try {
     // Using the correct endpoint from the documentation
-    const endpoint = "https://api.ceipal.com/v1/getJobPostingsList";
+    const endpoint =
+      "https://api.ceipal.com/getCustomJobPostingDetails/Z3RkUkt2OXZJVld2MjFpOVRSTXoxZz09/ee4a96a9e2f7a822b0bb8ebb89b1c18c";
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
     });
-    // Transform the data to match your frontend structure
-    // let transformedJobs = [];
-    // if (Array.isArray(response.data)) {
-    //   transformedJobs = response.data.map((job) => transformJobData(job));
-    // } else if (response.data && Array.isArray(response.data.results)) {
-    //   transformedJobs = response.data.results.map((job) =>
-    //     transformJobData(job)
-    //   );
-    // } else if (response.data && Array.isArray(response.data.jobs)) {
-    //   transformedJobs = response.data.jobs.map((job) => transformJobData(job));
-    // } else if (response.data && Array.isArray(response.data.data)) {
-    //   transformedJobs = response.data.data.map((job) => transformJobData(job));
-    // } else if (response.data && typeof response.data === "object") {
-    //   // If the response is an object but not in the expected format,
-    //   // try to extract job data from it
-    //   const possibleJobArrays = Object.values(response.data).filter(
-    //     (value) => Array.isArray(value) && value.length > 0
-    //   );
-
-    //   if (possibleJobArrays.length > 0) {
-    //     // Use the largest array as it's most likely to be the jobs array
-    //     const jobsArray = possibleJobArrays.reduce((a, b) =>
-    //       a.length > b.length ? a : b
-    //     );
-    //     transformedJobs = jobsArray.map((job) => transformJobData(job));
-    //   } else {
-    //     // If we can't find an array, check if the response itself might be a single job
-    //     if (response.data.id || response.data.job_id || response.data.title) {
-    //       transformedJobs = [transformJobData(response.data)];
-    //     } else {
-    //       console.warn(
-    //         "Unexpected response structure. Could not find jobs array."
-    //       );
-    //       throw new Error(
-    //         "Unexpected response structure. Could not find jobs array."
-    //       );
-    //     }
-    //   }
-    // } else {
-    //   console.warn("Unexpected response structure. Could not find jobs array.");
-    //   throw new Error(
-    //     "Unexpected response structure. Could not find jobs array."
-    //   );
-    // }
-    // // console.log("transformedJobs in single job api:", transformedJobs);
-    // console.log("transformedJobs in all job api:");
     res.json(response.data);
   } catch (error) {
     console.error("Error fetching jobs from CEIPAL:", error.message);
@@ -222,51 +177,51 @@ app.get("/api/jobs", ensureToken, async (req, res) => {
 });
 
 // Route to get a specific job by ID
-app.get("/api/jobs/:id", ensureToken, async (req, res) => {
-  try {
-    const jobId = req.params.id;
+// app.get("/api/jobs/:id", ensureToken, async (req, res) => {
+//   try {
+//     const jobId = req.params.id;
 
-    // Using the correct endpoint from the documentation with job_id as a query parameter
-    const endpoint = `https://api.ceipal.com/v1/getJobPostingDetails/?job_id=${jobId}`;
+//     // Using the correct endpoint from the documentation with job_id as a query parameter
+//     const endpoint = `https://api.ceipal.com/v1/getJobPostingDetails/?job_id=${jobId}`;
 
-    const response = await axios.get(endpoint, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-    // Transform the job data
-    const transformedJob = transformJobData(response.data);
-    res.json(transformedJob);
-  } catch (error) {
-    console.log("error:", error);
-    console.error(
-      `Error fetching job ${req.params.id} from CEIPAL:`,
-      error.message
-    );
-    if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
-    }
+//     const response = await axios.get(endpoint, {
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//         "Content-Type": "application/json",
+//       },
+//     });
+//     // Transform the job data
+//     const transformedJob = transformJobData(response.data);
+//     res.json(transformedJob);
+//   } catch (error) {
+//     console.log("error:", error);
+//     console.error(
+//       `Error fetching job ${req.params.id} from CEIPAL:`,
+//       error.message
+//     );
+//     if (error.response) {
+//       console.error("Response status:", error.response.status);
+//       console.error("Response data:", error.response.data);
+//     }
 
-    // If there's an authentication error, try to get new tokens and retry
-    if (error.response && error.response.status === 401) {
-      try {
-        console.log("Authentication error. Getting new tokens and retrying...");
-        await getAuthTokens();
-        return res.redirect(`/api/jobs/${req.params.id}`);
-      } catch (authError) {
-        console.error("Failed to refresh authentication:", authError.message);
-      }
-    }
+//     // If there's an authentication error, try to get new tokens and retry
+//     if (error.response && error.response.status === 401) {
+//       try {
+//         console.log("Authentication error. Getting new tokens and retrying...");
+//         await getAuthTokens();
+//         return res.redirect(`/api/jobs/${req.params.id}`);
+//       } catch (authError) {
+//         console.error("Failed to refresh authentication:", authError.message);
+//       }
+//     }
 
-    // Return an error message
-    res.status(error.response?.status || 500).json({
-      error: `Failed to fetch job details for ID: ${req.params.id}`,
-      message: error.message,
-    });
-  }
-});
+//     // Return an error message
+//     res.status(error.response?.status || 500).json({
+//       error: `Failed to fetch job details for ID: ${req.params.id}`,
+//       message: error.message,
+//     });
+//   }
+// });
 
 // Helper function to transform job data
 function transformJobData(job) {
@@ -557,70 +512,6 @@ function extractResponsibilities(job) {
 
   return [];
 }
-
-// app.post("/api/apply-job", upload.single("resume"), async (req, res) => {
-//   try {
-//     const { jobId, firstName, lastName, email, phone } = req.body;
-//     const resumeFile = req.file;
-
-//     if (!jobId || !firstName || !lastName || !email || !phone || !resumeFile) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Missing required fields",
-//       });
-//     }
-
-//     const formData = new FormData();
-//     formData.append("job_id", jobId);
-//     formData.append("first_name", firstName);
-//     formData.append("last_name", lastName);
-//     formData.append("email", email);
-//     formData.append("phone", phone);
-
-//     const fileStream = fs.createReadStream(resumeFile.path);
-//     formData.append("resume", fileStream, {
-//       filename: resumeFile.originalname,
-//       contentType: resumeFile.mimetype,
-//     });
-
-//     const apiToken = process.env.CEIPAL_API_TOKEN;
-//     if (!apiToken) {
-//       return res.status(500).json({
-//         success: false,
-//         message: "API token not configured",
-//       });
-//     }
-
-//     const response = await fetch(
-//       "https://api.ceipal.com/v1/applyJobWithOutRegistration",
-//       {
-//         method: "POST",
-//         headers: {
-//           Authorization: `Bearer ${apiToken}`,
-//         },
-//         body: formData,
-//       }
-//     );
-
-//     const responseData = await response.json();
-
-//     fs.unlinkSync(resumeFile.path);
-
-//     return res.json({
-//       success: response.ok,
-//       data: responseData,
-//     });
-//   } catch (error) {
-//     console.error("Error applying for job:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Failed to submit application",
-//       error: error.message,
-//     });
-//   }
-// });
-
-// Start the server
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
