@@ -138,9 +138,10 @@ async function ensureToken(req, res, next) {
 // Route to get jobs from CEIPAL
 app.get("/api/jobs", ensureToken, async (req, res) => {
   try {
+    const page = req.query.page ? Number.parseInt(req.query.page) : 1;
     // Using the correct endpoint from the documentation
     const endpoint =
-      "https://api.ceipal.com/getCustomJobPostingDetails/Z3RkUkt2OXZJVld2MjFpOVRSTXoxZz09/ee4a96a9e2f7a822b0bb8ebb89b1c18c";
+      `https://api.ceipal.com/getCustomJobPostingDetails/Z3RkUkt2OXZJVld2MjFpOVRSTXoxZz09/ee4a96a9e2f7a822b0bb8ebb89b1c18c/?page=${page}`;
     const response = await axios.get(endpoint, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -224,141 +225,141 @@ app.get("/api/jobs", ensureToken, async (req, res) => {
 // });
 
 // Helper function to transform job data
-function transformJobData(job) {
-  // Simplified location handling to avoid long lists of locations
-  let location = "Remote";
+// function transformJobData(job) {
+//   // Simplified location handling to avoid long lists of locations
+//   let location = "Remote";
 
-  // First try to get a simple location string
-  if (
-    job.work_location &&
-    typeof job.work_location === "string" &&
-    job.work_location.length < 50
-  ) {
-    location = job.work_location;
-  } else if (
-    job.location &&
-    typeof job.location === "string" &&
-    job.location.length < 50
-  ) {
-    location = job.location;
-  } else if (job.city && typeof job.city === "string") {
-    // If we have a city, use that with optional state/country
-    location = job.city;
-    if (job.state && typeof job.state === "string" && job.state.length < 20) {
-      location += ", " + job.state;
-    }
-    if (
-      job.country &&
-      typeof job.country === "string" &&
-      job.country.length < 20
-    ) {
-      location += ", " + job.country;
-    }
-  } else if (
-    job.state &&
-    typeof job.state === "string" &&
-    job.state.length < 20
-  ) {
-    // If no city but we have state
-    location = job.state;
-    if (
-      job.country &&
-      typeof job.country === "string" &&
-      job.country.length < 20
-    ) {
-      location += ", " + job.country;
-    }
-  } else if (
-    job.country &&
-    typeof job.country === "string" &&
-    job.country.length < 20
-  ) {
-    // Just country
-    location = job.country;
-  }
+//   // First try to get a simple location string
+//   if (
+//     job.work_location &&
+//     typeof job.work_location === "string" &&
+//     job.work_location.length < 50
+//   ) {
+//     location = job.work_location;
+//   } else if (
+//     job.location &&
+//     typeof job.location === "string" &&
+//     job.location.length < 50
+//   ) {
+//     location = job.location;
+//   } else if (job.city && typeof job.city === "string") {
+//     // If we have a city, use that with optional state/country
+//     location = job.city;
+//     if (job.state && typeof job.state === "string" && job.state.length < 20) {
+//       location += ", " + job.state;
+//     }
+//     if (
+//       job.country &&
+//       typeof job.country === "string" &&
+//       job.country.length < 20
+//     ) {
+//       location += ", " + job.country;
+//     }
+//   } else if (
+//     job.state &&
+//     typeof job.state === "string" &&
+//     job.state.length < 20
+//   ) {
+//     // If no city but we have state
+//     location = job.state;
+//     if (
+//       job.country &&
+//       typeof job.country === "string" &&
+//       job.country.length < 20
+//     ) {
+//       location += ", " + job.country;
+//     }
+//   } else if (
+//     job.country &&
+//     typeof job.country === "string" &&
+//     job.country.length < 20
+//   ) {
+//     // Just country
+//     location = job.country;
+//   }
 
-  // If location is an array or comma-separated list, just take the first item
-  if (location.includes(",") && location.length > 50) {
-    location = location.split(",")[0].trim();
-  }
+//   // If location is an array or comma-separated list, just take the first item
+//   if (location.includes(",") && location.length > 50) {
+//     location = location.split(",")[0].trim();
+//   }
 
-  // Keep the original HTML for rendering in the frontend
-  const originalHtml = job.public_job_desc || job.requisition_description || "";
+//   // Keep the original HTML for rendering in the frontend
+//   const originalHtml = job.public_job_desc || job.requisition_description || "";
 
-  // Extract a clean description (without HTML tags) for other uses
-  const cleanDescription = originalHtml
-    ? originalHtml
-        .replace(/<[^>]+>/g, " ")
-        .replace(/&nbsp;/g, " ")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/\s+/g, " ")
-        .trim()
-    : job.description ||
-      job.job_description ||
-      job.jobDescription ||
-      "No description provided";
+//   // Extract a clean description (without HTML tags) for other uses
+//   const cleanDescription = originalHtml
+//     ? originalHtml
+//         .replace(/<[^>]+>/g, " ")
+//         .replace(/&nbsp;/g, " ")
+//         .replace(/&amp;/g, "&")
+//         .replace(/&lt;/g, "<")
+//         .replace(/&gt;/g, ">")
+//         .replace(/\s+/g, " ")
+//         .trim()
+//     : job.description ||
+//       job.job_description ||
+//       job.jobDescription ||
+//       "No description provided";
 
-  // Get experience directly from the experience field or extract it from description
-  const experience = formatExperience(job, cleanDescription);
+//   // Get experience directly from the experience field or extract it from description
+//   const experience = formatExperience(job, cleanDescription);
 
-  // Extract responsibilities from job description
-  const responsibilities = extractResponsibilitiesFromHTML(
-    job.public_job_desc || job.requisition_description
-  );
+//   // Extract responsibilities from job description
+//   const responsibilities = extractResponsibilitiesFromHTML(
+//     job.public_job_desc || job.requisition_description
+//   );
 
-  return {
-    id: job.id || job.job_id || job.jobId || job.job_code || "",
-    title:
-      job.position_title ||
-      job.public_job_title ||
-      job.title ||
-      job.job_title ||
-      job.jobTitle ||
-      "Untitled Position",
-    company:
-      job.company_name ||
-      job.companyName ||
-      job.company ||
-      job.client_name ||
-      "SKYWINGS",
-    location: location,
-    experience: experience,
-    description: cleanDescription,
-    public_job_desc: originalHtml,
-    job_created: job.created,
-    postal_code: job.postal_code,
-    duration: job.duration,
-    min_experience: job.min_experience,
-    job_start_date: job.job_start_date,
-    job_end_date: job.job_end_date,
-    modified: job.modified,
-    number_of_positions: job.number_of_positions,
-    job_status: job.job_status,
-    posted: job.posted,
-    skills: job.skills,
-    states: job.skills,
-    apply_job: job.apply_job,
-    requisition_description: job.requisition_description,
-    pay_rates: job.pay_rates,
-    employment_type: job.employment_type,
-    remote_opportunities: job.remote_opportunities,
-    closing_date: job.closing_date,
-    details: {
-      summary:
-        job.summary ||
-        job.job_summary ||
-        job.jobSummary ||
-        extractSummaryFromHTML(job.public_job_desc) ||
-        "No summary available",
-      responsibilities:
-        responsibilities.length > 0
-          ? responsibilities
-          : extractResponsibilities(job),
-    },
-  };
-}
+//   return {
+//     id: job.id || job.job_id || job.jobId || job.job_code || "",
+//     title:
+//       job.position_title ||
+//       job.public_job_title ||
+//       job.title ||
+//       job.job_title ||
+//       job.jobTitle ||
+//       "Untitled Position",
+//     company:
+//       job.company_name ||
+//       job.companyName ||
+//       job.company ||
+//       job.client_name ||
+//       "SKYWINGS",
+//     location: location,
+//     experience: experience,
+//     description: cleanDescription,
+//     public_job_desc: originalHtml,
+//     job_created: job.created,
+//     postal_code: job.postal_code,
+//     duration: job.duration,
+//     min_experience: job.min_experience,
+//     job_start_date: job.job_start_date,
+//     job_end_date: job.job_end_date,
+//     modified: job.modified,
+//     number_of_positions: job.number_of_positions,
+//     job_status: job.job_status,
+//     posted: job.posted,
+//     skills: job.skills,
+//     states: job.skills,
+//     apply_job: job.apply_job,
+//     requisition_description: job.requisition_description,
+//     pay_rates: job.pay_rates,
+//     employment_type: job.employment_type,
+//     remote_opportunities: job.remote_opportunities,
+//     closing_date: job.closing_date,
+//     details: {
+//       summary:
+//         job.summary ||
+//         job.job_summary ||
+//         job.jobSummary ||
+//         extractSummaryFromHTML(job.public_job_desc) ||
+//         "No summary available",
+//       responsibilities:
+//         responsibilities.length > 0
+//           ? responsibilities
+//           : extractResponsibilities(job),
+//     },
+//   };
+// }
 
 // Helper function to extract responsibilities from HTML content
 function extractResponsibilitiesFromHTML(htmlContent) {
