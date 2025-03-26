@@ -190,10 +190,19 @@ async function fetchAllJobsAndUpdateCache() {
       }
     })
 
+    // Sort jobs by Created date (newest first)
+    allJobs.sort((a, b) => {
+      // Use the Created field from the API response
+      if (a.Created && b.Created) {
+        return new Date(b.Created).getTime() - new Date(a.Created).getTime()
+      }
+      return 0
+    })
+
     // Update cache
     cachedJobs = allJobs
     cacheTimestamp = Date.now()
-    console.log(`Cached ${allJobs.length} jobs from ${totalPages} pages`)
+    console.log(`Cached ${allJobs.length} jobs from ${totalPages} pages, sorted by creation date (newest first)`)
 
     return allJobs
   } catch (error) {
@@ -206,41 +215,64 @@ async function fetchAllJobsAndUpdateCache() {
 app.get("/api/jobs", ensureToken, async (req, res) => {
   try {
     const page = req.query.page ? Number.parseInt(req.query.page) : 1
+    const limit = 20 // Items per page
 
-    // Check if we need to refresh the cache for the initial load
+    // Check if we need to refresh the cache
     const isCacheValid = cachedJobs.length > 0 && cacheTimestamp && Date.now() - cacheTimestamp < CACHE_DURATION
 
-    if (!isCacheValid && page === 1) {
-      // Fetch all jobs and update cache in the background
-      fetchAllJobsAndUpdateCache().catch((err) => {
-        console.error("Background cache update failed:", err.message)
-      })
+    let allJobs = []
+
+    if (isCacheValid) {
+      console.log("Using cached jobs data")
+      allJobs = cachedJobs
+    } else {
+      console.log("Cache invalid or empty, fetching all jobs")
+      try {
+        allJobs = await fetchAllJobsAndUpdateCache()
+      } catch (error) {
+        console.error("Error fetching all jobs:", error.message)
+
+        // If fetching all jobs fails, try to get at least the requested page
+        const endpoint = `https://api.ceipal.com/getCustomJobPostingDetails/Z3RkUkt2OXZJVld2MjFpOVRSTXoxZz09/ee4a96a9e2f7a822b0bb8ebb89b1c18c/?page=${page}`
+        const response = await axios.get(endpoint, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (response.data && response.data.results) {
+          // Return the single page result with a warning
+          console.log("Falling back to single page result")
+          return res.json({
+            ...response.data,
+            warning: "Could not fetch all jobs. Results may not be sorted correctly.",
+          })
+        } else {
+          throw error // Re-throw if we couldn't get any results
+        }
+      }
     }
 
-    // Using the correct endpoint from the documentation
-    const endpoint = `https://api.ceipal.com/getCustomJobPostingDetails/Z3RkUkt2OXZJVld2MjFpOVRSTXoxZz09/ee4a96a9e2f7a822b0bb8ebb89b1c18c/?page=${page}`
-    const response = await axios.get(endpoint, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    })
+    // Calculate pagination
+    const startIndex = (page - 1) * limit
+    const endIndex = page * limit
+    const paginatedJobs = allJobs.slice(startIndex, endIndex)
+    const totalPages = Math.ceil(allJobs.length / limit)
 
-    // Update total pages and count if available in the response
-    if (response.data && response.data.num_pages) {
-      totalPages = response.data.num_pages
+    // Construct response object similar to the API response
+    const response = {
+      count: allJobs.length,
+      num_pages: totalPages,
+      limit: limit,
+      page_number: page,
+      page_count: paginatedJobs.length,
+      next: page < totalPages ? `${req.protocol}://${req.get("host")}/api/jobs?page=${page + 1}` : null,
+      previous: page > 1 ? `${req.protocol}://${req.get("host")}/api/jobs?page=${page - 1}` : null,
+      results: paginatedJobs,
     }
 
-    if (response.data && response.data.count) {
-      totalJobCount = response.data.count
-    }
-
-    // Ensure the count is consistent
-    if (response.data) {
-      response.data.count = totalJobCount
-    }
-
-    res.json(response.data)
+    res.json(response)
   } catch (error) {
     console.error("Error fetching jobs from CEIPAL:", error.message)
     if (error.response) {
@@ -305,6 +337,14 @@ app.get("/api/searchjobs", ensureToken, async (req, res) => {
         if (firstPageResponse.data && firstPageResponse.data.results) {
           allJobs = firstPageResponse.data.results
           console.log("Falling back to first page results only")
+
+          // Sort by Created date (newest first)
+          allJobs.sort((a, b) => {
+            if (a.Created && b.Created) {
+              return new Date(b.Created).getTime() - new Date(a.Created).getTime()
+            }
+            return 0
+          })
         }
       }
     }
@@ -336,13 +376,15 @@ app.get("/api/searchjobs", ensureToken, async (req, res) => {
     // Limit results for faster response
     const limitedResults = filteredJobs.slice(0, limit)
 
-    // Return the filtered jobs with pagination info
+    // Return the filtered jobs with pagination info and total count
     res.json({
       count: filteredJobs.length,
       total_count: totalJobCount, // Include total count for reference
       results: limitedResults,
       next: limitedResults.length < filteredJobs.length ? true : null,
       previous: null,
+      num_pages: Math.ceil(filteredJobs.length / 20), // Add num_pages for pagination
+      page_number: 1,
     })
   } catch (error) {
     console.error("Error searching jobs from CEIPAL:", error.message)
