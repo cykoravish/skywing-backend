@@ -11,7 +11,11 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", process.env.FORNTEND_URL, "https://relyzers.shop"], // Only allow frontend
+    origin: [
+      "http://localhost:5173",
+      process.env.FORNTEND_URL,
+      "https://relyzers.shop",
+    ], // Only allow frontend
     methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
     credentials: true, // If using cookies/auth tokens
   })
